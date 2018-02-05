@@ -1,0 +1,159 @@
+version: '3'
+services:
+  nginx:
+    image: nginx:latest
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - nginx-gen
+    volumes:
+      - confd:/etc/nginx/conf.d
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - certs:/etc/nginx/certs:ro
+
+  nginx-gen:
+    build:
+      context: ./nginx-gen
+    command: -notify-sighup nginx -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+    container_name: nginx-gen
+    restart: unless-stopped
+    volumes:
+      - confd:/etc/nginx/conf.d
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  nginx-letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion:latest
+    container_name: nginx-letsencrypt
+    restart: unless-stopped
+    depends_on:
+      - nginx-gen
+    volumes:
+      - confd:/etc/nginx/conf.d
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      NGINX_DOCKER_GEN_CONTAINER: "nginx-gen"
+      NGINX_PROXY_CONTAINER: "nginx"
+      #DEBUG: "true"
+      #ACME_CA_URI: "https://acme-staging.api.letsencrypt.org/directory"
+  db:
+    image: library/mariadb:10.0.23
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci --init-connect='SET NAMES UTF8;' --innodb-flush-log-at-trx-commit=0
+    environment:
+      - MYSQL_DATABASE=portus_production
+
+      # Again, the password shouldn't be handled like this.
+      - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
+
+  portus:
+    build:
+      context: ./portus
+    restart: unless-stopped
+    container_name: portus
+    #ports:
+    #  - 3000:3000
+    depends_on:
+      - db
+    environment:
+      PORTUS_MACHINE_FQDN_VALUE: ${PORTUS_FQDN}
+      PORTUS_DB_HOST: db
+      PORTUS_DB_DATABASE: portus_production
+      PORTUS_DB_PASSWORD: ${DATABASE_PASSWORD}
+      PORTUS_DB_POOL: 5
+      # Secrets
+      PORTUS_SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      PORTUS_CHECK_SSL_USAGE_ENABLED: 'false'
+      PORTUS_KEY_PATH: '/certificates/portus.key'
+      PORTUS_PASSWORD: ${PORTUS_PASSWORD}
+      RAILS_SERVE_STATIC_FILES: 'true'
+      # letsencrypt proxy
+      VIRTUAL_HOST: ${PORTUS_FQDN}
+      VIRTUAL_PROTO: http
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: ${PORTUS_FQDN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+      LETSENCRYPT_TEST: ${LETSENCRYPT_TEST:-false}
+    links:
+      - db
+    volumes:
+      - portus-data:/srv/Portus/public
+
+  background:
+    build:
+      context: ./portus
+    depends_on:
+      - portus
+      - db
+    environment:
+      # Theoretically not needed, but cconfig's been buggy on this...
+      - CCONFIG_PREFIX=PORTUS
+      - PORTUS_MACHINE_FQDN_VALUE=${PORTUS_FQDN}
+
+      # DB. The password for the database should definitely not be here. You are
+      # probably better off with Docker Swarm secrets.
+      - PORTUS_DB_HOST=db
+      - PORTUS_DB_DATABASE=portus_production
+      - PORTUS_DB_PASSWORD=${DATABASE_PASSWORD}
+      - PORTUS_DB_POOL=5
+
+      # Secrets. It can possibly be handled better with Swarm's secrets.
+      - PORTUS_CHECK_SSL_USAGE_ENABLED='false'
+      - PORTUS_SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - PORTUS_KEY_PATH=/certificates/portus.key
+      - PORTUS_PASSWORD=${PORTUS_PASSWORD}
+
+      - PORTUS_BACKGROUND=true
+    links:
+      - db
+  
+  registry:
+    build:
+      context: ./registry
+    restart: unless-stopped
+    container_name: registry
+    command: ["/bin/sh", "/etc/docker/registry/init"]
+    #ports:
+      #- 5001:5001 # required to access debug service
+      #- 5000:5000
+    environment:
+      # Authentication
+      REGISTRY_AUTH_TOKEN_REALM: https://${PORTUS_FQDN}/v2/token
+      REGISTRY_AUTH_TOKEN_SERVICE: ${REGISTRY_FQDN}
+      REGISTRY_AUTH_TOKEN_ISSUER: ${PORTUS_FQDN}
+      REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE: /secrets/portus.crt
+      # Portus endpoint
+      REGISTRY_NOTIFICATIONS_ENDPOINTS: >
+        - name: portus
+          url: http://portus:3000/v2/webhooks/events
+          timeout: 2000ms
+          threshold: 5
+          backoff: 1s
+      # letsencrypt proxy
+      VIRTUAL_HOST: ${REGISTRY_FQDN}
+      VIRTUAL_PROTO: http
+      VIRTUAL_PORT: 5000
+      LETSENCRYPT_HOST: ${REGISTRY_FQDN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+      LETSENCRYPT_TEST: ${LETSENCRYPT_TEST:-false}
+    volumes:
+      - registry-data:/var/lib/registry
+   
+volumes:
+  mysql-data:
+  portus-data:
+  registry-data:
+  confd:
+  vhostd:
+  html:
+  certs:
