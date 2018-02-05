@@ -1,7 +1,7 @@
 
 # Letsencrypt Portus
 
-using the idea of thpham/portus-registry-tls-compose with updated software.
+using the idea of thpham/portus-registry-tls-compose.
 Deploy portus with auto-generated ssl certificate with letsencrypt
 
 # Usage
