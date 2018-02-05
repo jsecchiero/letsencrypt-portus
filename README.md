@@ -8,8 +8,7 @@ Deploy portus with auto-generated ssl certificate with letsencrypt
 
 edit each .env variable before deploy
 
-PORTUS_FQDN must be a reachable domain to work
-REGISTRY_FQDN must be a reachable domain to work
+PORTUS_FQDN and REGISTRY_FQDN must be reachable domain from internet to work
 
 deploy
 
