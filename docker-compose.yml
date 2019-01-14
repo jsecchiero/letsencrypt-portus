@@ -133,6 +133,7 @@ services:
       REGISTRY_AUTH_TOKEN_SERVICE: ${REGISTRY_FQDN}
       REGISTRY_AUTH_TOKEN_ISSUER: ${PORTUS_FQDN}
       REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE: /secrets/portus.crt
+      REGISTRY_AUTH_TOKEN_AUTOREDIRECT: 'false'
       # Portus endpoint
       REGISTRY_NOTIFICATIONS_ENDPOINTS: >
         - name: portus
