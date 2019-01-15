@@ -49,6 +49,7 @@ services:
       #ACME_CA_URI: "https://acme-staging.api.letsencrypt.org/directory"
   db:
     image: library/mariadb:10.0.23
+    restart: always
     command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci --init-connect='SET NAMES UTF8;' --innodb-flush-log-at-trx-commit=0
     environment:
       - MYSQL_DATABASE=portus_production
