@@ -67,6 +67,7 @@ services:
     depends_on:
       - db
     environment:
+      PORTUS_DELETE_ENABLED: 'true'
       PORTUS_MACHINE_FQDN_VALUE: ${PORTUS_FQDN}
       PORTUS_DB_HOST: db
       PORTUS_DB_DATABASE: portus_production
@@ -129,6 +130,8 @@ services:
       #- 5001:5001 # required to access debug service
       #- 5000:5000
     environment:
+      # Storage
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true' 
       # Authentication
       REGISTRY_AUTH_TOKEN_REALM: https://${PORTUS_FQDN}/v2/token
       REGISTRY_AUTH_TOKEN_SERVICE: ${REGISTRY_FQDN}
