@@ -78,6 +78,7 @@ services:
       PORTUS_CHECK_SSL_USAGE_ENABLED: 'false'
       PORTUS_KEY_PATH: '/certificates/portus.key'
       PORTUS_PASSWORD: ${PORTUS_PASSWORD}
+      PORTUS_SIGNUP_ENABLED: 'false'
       RAILS_SERVE_STATIC_FILES: 'true'
       # letsencrypt proxy
       VIRTUAL_HOST: ${PORTUS_FQDN}
