@@ -16,6 +16,10 @@ services:
       - vhostd:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - certs:/etc/nginx/certs:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
 
   nginx-gen:
     build:
@@ -29,6 +33,10 @@ services:
       - html:/usr/share/nginx/html
       - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
 
   nginx-letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion:latest
@@ -47,6 +55,11 @@ services:
       NGINX_PROXY_CONTAINER: "nginx"
       #DEBUG: "true"
       #ACME_CA_URI: "https://acme-staging.api.letsencrypt.org/directory"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+
   db:
     image: library/mariadb:10.0.23
     restart: always
@@ -56,6 +69,10 @@ services:
 
       # Again, the password shouldn't be handled like this.
       - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
 
   portus:
     build:
@@ -91,6 +108,10 @@ services:
       - db
     volumes:
       - portus-data:/srv/Portus/public
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
 
   background:
     build:
@@ -120,6 +141,10 @@ services:
       - PORTUS_BACKGROUND=true
     links:
       - db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
   
   registry:
     build:
@@ -155,6 +180,10 @@ services:
       LETSENCRYPT_TEST: ${LETSENCRYPT_TEST:-false}
     volumes:
       - registry-data:/var/lib/registry
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
    
 volumes:
   mysql-data:
