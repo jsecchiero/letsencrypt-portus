@@ -22,9 +22,7 @@ envsubst < .env.tmpl > .env
 docker-compose up -d
 ```
 
-Go to https://portus.example.com and create a user:
-
-![alt text](https://raw.githubusercontent.com/jsecchiero/letsencrypt-portus/master/doc/user.png)
+Go to https://portus.example.com and login with `portus` and `PORTUS_PASSWORD`:
 
 Create registry connection:
 - edit _Name_ with `reigstry`
