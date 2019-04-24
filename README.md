@@ -25,7 +25,7 @@ docker-compose up -d
 Go to https://portus.example.com and login with `portus` and `PORTUS_PASSWORD`:
 
 Create registry connection:
-- edit _Name_ with `reigstry`
+- edit _Name_ with `registry`
 - edit _Hostname_ with `registry:5000`
 - click on _show advanced button_
 - edit _External Registry Name_ with `registry.example.com`
